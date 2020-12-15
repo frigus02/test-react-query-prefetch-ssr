@@ -1,74 +1,75 @@
-import React from 'react'
-import axios from 'axios'
+import React from "react";
+import axios from "axios";
 import {
   useQuery,
-  useQueryClient,
-  QueryClient,
-  QueryClientProvider,
-} from 'react-query'
-import { dehydrate, Hydrate } from 'react-query/hydration'
-import { ReactQueryDevtools } from 'react-query/devtools'
+  useQueryCache,
+  QueryCache,
+  ReactQueryCacheProvider,
+} from "react-query";
+import { dehydrate, Hydrate } from "react-query/hydration";
 
 const getCharacters = async () => {
-  await new Promise(r => setTimeout(r, 500))
-  const { data } = await axios.get('https://rickandmortyapi.com/api/character/')
-  return data
-}
+  await new Promise((r) => setTimeout(r, 500));
+  const { data } = await axios.get(
+    "https://rickandmortyapi.com/api/character/"
+  );
+  return data;
+};
 
-const getCharacter = async selectedChar => {
-  await new Promise(r => setTimeout(r, 500))
+const getCharacter = async (selectedChar) => {
+  await new Promise((r) => setTimeout(r, 500));
   const { data } = await axios.get(
     `https://rickandmortyapi.com/api/character/${selectedChar}`
-  )
-  return data
-}
+  );
+  return data;
+};
 
-const queryClient = new QueryClient()
+const queryCache = new QueryCache();
 
 export default function CustomApp({ pageProps }) {
   return (
-    <QueryClientProvider client={queryClient}>
+    <ReactQueryCacheProvider queryCache={queryCache}>
       <Hydrate state={pageProps.dehydratedState}>
         <Example />
       </Hydrate>
-    </QueryClientProvider>
-  )
+    </ReactQueryCacheProvider>
+  );
 }
 
 CustomApp.getInitialProps = async () => {
   await Promise.all([
-    queryClient.prefetchQuery('characters', getCharacters),
-    queryClient.prefetchQuery(['character', 1], () => getCharacter(1)),
-  ])
+    queryCache.prefetchQuery("characters", getCharacters),
+    queryCache.prefetchQuery(["character", 1], () => getCharacter(1)),
+  ]);
 
   return {
     pageProps: {
-      dehydratedState: dehydrate(queryClient),
+      dehydratedState: dehydrate(queryCache),
     },
-  }
-}
+  };
+};
 
 function Example() {
-  const client = useQueryClient()
-  const [selectedChar, setSelectedChar] = React.useState(1)
+  const cache = useQueryCache();
+  const [selectedChar, setSelectedChar] = React.useState(1);
 
-  const { data } = useQuery('characters', getCharacters, {
+  const { data } = useQuery("characters", getCharacters, {
     refetchOnWindowFocus: false,
     staleTime: 10_000,
-  })
+  });
 
   const { data: selectedData } = useQuery(
-    ['character', selectedChar],
+    ["character", selectedChar],
     () => getCharacter(selectedChar),
     {
       refetchOnWindowFocus: false,
       staleTime: 10_000,
     }
-  )
+  );
 
   const invalidate = () => {
-    client.invalidateQueries('characters')
-  }
+    cache.invalidateQueries("characters");
+  };
 
   return (
     <div className="App">
@@ -81,18 +82,18 @@ function Example() {
       <button onClick={invalidate}>Invalidate</button>
       <h2>Characters</h2>
       <ul>
-        {data?.results.map(char => (
+        {data?.results.map((char) => (
           <li
             key={char.id}
             onClick={() => {
-              setSelectedChar(char.id)
+              setSelectedChar(char.id);
             }}
           >
             <div
               style={
-                client.getQueryData(['character', char.id])
+                cache.getQueryData(["character", char.id])
                   ? {
-                      fontWeight: 'bold',
+                      fontWeight: "bold",
                     }
                   : {}
               }
@@ -106,7 +107,6 @@ function Example() {
       <p>
         {selectedData?.name} ({selectedData?.status})
       </p>
-      <ReactQueryDevtools initialIsOpen />
     </div>
-  )
+  );
 }
