@@ -30,6 +30,7 @@ Module.prototype.require = function(modulePath) {
 }
 
 module.exports = {
+  target: 'serverless',
   webpack: config => {
     config.resolve = {
       ...config.resolve,
