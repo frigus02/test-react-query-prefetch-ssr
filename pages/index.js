@@ -25,9 +25,14 @@ const getCharacter = async (selectedChar) => {
   return data;
 };
 
-const queryClient = new QueryClient();
-
 export default function CustomApp({ pageProps }) {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        cacheTime: typeof window === "undefined" ? -1 : 5 * 60 * 1000,
+      },
+    },
+  });
   return (
     <QueryClientProvider client={queryClient}>
       <Hydrate state={pageProps.dehydratedState}>
@@ -38,16 +43,31 @@ export default function CustomApp({ pageProps }) {
 }
 
 CustomApp.getInitialProps = async () => {
-  await Promise.all([
-    queryClient.prefetchQuery("characters", getCharacters),
-    queryClient.prefetchQuery(["character", 1], () => getCharacter(1)),
-  ]);
-
-  return {
-    pageProps: {
-      dehydratedState: dehydrate(queryClient),
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        cacheTime: -1,
+      },
     },
-  };
+  });
+  try {
+    await Promise.all([
+      queryClient.fetchQuery("characters", getCharacters),
+      queryClient.fetchQuery(["character", 1], () => getCharacter(1)),
+    ]);
+    const dehydratedState = dehydrate(queryClient);
+
+    return {
+      pageProps: {
+        dehydratedState,
+      },
+    };
+  } catch (err) {
+    console.log("PREFETCH ERROR", err);
+    return {
+      pageProps: {},
+    };
+  }
 };
 
 function Example() {
